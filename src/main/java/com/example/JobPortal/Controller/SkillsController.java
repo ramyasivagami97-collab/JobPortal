@@ -1,7 +1,11 @@
 package com.example.JobPortal.Controller;
 
+import com.example.JobPortal.DTO.SkillsRequestDTO;
+import com.example.JobPortal.DTO.SkillsResponseDTO;
 import com.example.JobPortal.Entity.Skills;
 import com.example.JobPortal.Service.SkillsService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,24 +22,25 @@ public class SkillsController {
     }
 
     @PostMapping("/skills")
-    public ResponseEntity<Skills> addSkill(@RequestBody Skills skills){
-        Skills newSkills = skillsService.addSkill(skills);
-        return ResponseEntity.ok(newSkills);
+    public ResponseEntity<SkillsResponseDTO> addSkill(@Valid @RequestBody SkillsRequestDTO request){
+        SkillsResponseDTO newSkills = skillsService.addSkill(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newSkills);
     }
 
     @GetMapping("/skills")
-    public List<Skills> getAllSkills(){
+    public List<SkillsResponseDTO> getAllSkills(){
         return skillsService.getAllSkills();
     }
 
     @PutMapping("/skills/{id}")
-    public ResponseEntity<Skills> updateSkills(@PathVariable Long id, @RequestBody Skills skills){
-        Skills updatedSkills = skillsService.updateSkills(id, skills);
+    public ResponseEntity<SkillsResponseDTO> updateSkills(@PathVariable Long id,@Valid  @RequestBody SkillsRequestDTO request){
+        SkillsResponseDTO updatedSkills = skillsService.updateSkills(id, request);
         return ResponseEntity.ok(updatedSkills);
     }
 
     @DeleteMapping("/skills/{id}")
-    public void deleteSkills(@PathVariable Long id){
+    public ResponseEntity<String> deleteSkills(@PathVariable Long id){
         skillsService.deleteSkills(id);
+        return ResponseEntity.ok("Skill has been deleted!");
     }
 }

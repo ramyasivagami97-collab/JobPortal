@@ -3,12 +3,12 @@ package com.example.JobPortal.Entity;
 import com.example.JobPortal.ApplicationStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
-import java.util.List;
+
 
 @Data
 @Entity

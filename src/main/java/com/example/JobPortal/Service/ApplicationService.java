@@ -1,16 +1,21 @@
 package com.example.JobPortal.Service;
 
+import com.example.JobPortal.ApplicationStatus;
+import com.example.JobPortal.DTO.ApplicationResponseDTO;
 import com.example.JobPortal.Entity.Application;
 import com.example.JobPortal.Entity.Job;
 import com.example.JobPortal.Entity.Users;
+import com.example.JobPortal.Exception.*;
 import com.example.JobPortal.Repository.ApplicationRepository;
 import com.example.JobPortal.Repository.JobRepository;
 import com.example.JobPortal.Repository.UsersRepository;
-import org.apache.catalina.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -28,53 +33,67 @@ public class ApplicationService {
     }
 
 
-    public Application addApplication(Application application){
-        return applicationRepository.save(application);
+
+    public List<ApplicationResponseDTO> getAllApplications() {
+        List<Application> applicationList = applicationRepository.findAll();
+
+        return applicationList.stream()
+                .map(application -> new ApplicationResponseDTO(
+                        application.getId(),
+                        application.getAppliedDate(),
+                        application.getStatus()
+                )).toList();
     }
 
-    public List<Application> getAllApplications() {
-        return applicationRepository.findAll();
+    public ApplicationResponseDTO getApplicationById(Long id){
+        Application getApplicationId = applicationRepository.findById(id)
+                .orElseThrow(() -> new applicationNotFoundExceptions("No Application Found!"));
+        return new ApplicationResponseDTO(
+                getApplicationId.getId(),
+                getApplicationId.getAppliedDate(),
+                getApplicationId.getStatus()
+        );
     }
 
-    public Application getApplicationById(Long id){
-        return applicationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application ID is not available"));
-    }
 
-    public Application updateApplication(Long id, Application application){
-      if (!applicationRepository.existsById(id)){
-          throw new RuntimeException("Application ID is not available");
-      }
-        application.setId(id);
-      return applicationRepository.save(application);
-    }
+    public List<ApplicationResponseDTO> getApplicationsByUser(Long userId){
+        List<Application> applicationsList = applicationRepository.findByUsersId(userId);
 
-    public List<Application> getApplicationsByUser(Long userId){
-        List<Application> applications = applicationRepository.findByUsersId(userId);
-
-        if(applications.isEmpty()){
-            throw new RuntimeException("No applications found for this user");
+        if(applicationsList.isEmpty()){
+            throw new noApplicationFoundForUserExceptions("No applications found for this user!");
         }
-        return applications;
+
+            return applicationsList.stream()
+                    .map(application -> new ApplicationResponseDTO(
+                            application.getId(),
+                            application.getAppliedDate(),
+                            application.getStatus()
+                    )).toList();
     }
 
-    public List<Application> getApplicationsByJob(Long jobId){
-       List<Application> applications = applicationRepository.findByJobId(jobId);
+    public List<ApplicationResponseDTO> getApplicationsByJob(Long jobId){
+       List<Application> applicationsJob = applicationRepository.findByJobId(jobId);
 
-       if(applications.isEmpty()){
-           throw new RuntimeException("No applications found for this job");
+       if(applicationsJob.isEmpty()){
+           throw new noApplicationFoundForJobExceptions("No applications found for this job!");
        }
-       return applications;
+       return applicationsJob.stream()
+               .map(application -> new ApplicationResponseDTO(
+                       application.getId(),
+                       application.getAppliedDate(),
+                       application.getStatus()
+               )).toList();
+
     }
-    public Application applyForJob(Long jobId, Long userId){
+    public ApplicationResponseDTO applyForJob(Long jobId, Long userId){
         Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new RuntimeException("Job is not available"));
+                .orElseThrow(() -> new jobNotFoundExceptions("Job not Found!"));
 
         Users users = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User is not found"));
+                .orElseThrow(() -> new userNotFoundExceptions("User not found!"));
 
         if (applicationRepository.existsByUsersIdAndJobId(userId, jobId)) {
-            throw new RuntimeException("User has already applied for this job");
+            throw new RuntimeException("User has already applied for this job!");
         }
 
         Application application = new Application();
@@ -82,13 +101,50 @@ public class ApplicationService {
         application.setUsers(users);
         application.setAppliedDate(LocalDate.now());
 
-        application.setStatus(com.example.JobPortal.ApplicationStatus.APPLIED);
-        return applicationRepository.save(application);
+        application.setStatus(ApplicationStatus.APPLIED);
+
+        Application savedApplication = applicationRepository.save(application);
+        return new ApplicationResponseDTO(
+                savedApplication.getId(),
+                savedApplication.getAppliedDate(),
+                savedApplication.getStatus()
+
+        );
 
     }
+
+    public ApplicationResponseDTO updateApplicationStatus(Long id, ApplicationStatus status){
+       Application findApplication = applicationRepository.findById(id)
+               .orElseThrow(() -> new applicationNotFoundExceptions("No Application Found!"));
+
+        findApplication.setStatus(status);
+       Application savedApplication = applicationRepository.save(findApplication);
+       return new ApplicationResponseDTO(
+               savedApplication.getId(),
+               savedApplication.getAppliedDate(),
+               savedApplication.getStatus()
+       );
+    }
+
+    public Page<ApplicationResponseDTO>getApplicationPaginated(int page, int size) {
+       Sort sort = Sort.by("appliedDate").ascending()
+               .and(Sort.by("status").descending());
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Application> applicationPage = applicationRepository.findAll(pageable);
+
+        return applicationPage.map(
+                application -> new ApplicationResponseDTO(
+                        application.getId(),
+                        application.getAppliedDate(),
+                        application.getStatus()
+                )
+        );
+
+    }
+
     public void deleteApplication(Long id){
         if(!applicationRepository.existsById(id)){
-            throw new RuntimeException("Application ID is not available");
+            throw new applicationNotFoundExceptions("No Application Found!");
         }
         applicationRepository.deleteById(id);
     }

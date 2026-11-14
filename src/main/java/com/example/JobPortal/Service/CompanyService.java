@@ -1,8 +1,16 @@
 package com.example.JobPortal.Service;
 
+import com.example.JobPortal.DTO.CompanyRequestDTO;
+import com.example.JobPortal.DTO.CompanyResponseDTO;
+import com.example.JobPortal.DTO.JobResponseDTO;
 import com.example.JobPortal.Entity.Company;
 import com.example.JobPortal.Entity.Job;
+import com.example.JobPortal.Exception.companyNotFoundExceptions;
 import com.example.JobPortal.Repository.CompanyRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,36 +25,104 @@ public class CompanyService {
     }
 
 
-    public Company addCompany(Company company){
-        return companyRepository.save(company);
+    public CompanyResponseDTO addCompany(CompanyRequestDTO request){
+        Company addedCompany = new Company();
+
+        addedCompany.setName(request.name());
+        addedCompany.setDescription(request.description());
+        addedCompany.setLocation(request.location());
+
+        Company savedCompany = companyRepository.save(addedCompany);
+        return new CompanyResponseDTO(
+                savedCompany.getId(),
+                savedCompany.getName(),
+                savedCompany.getDescription(),
+                savedCompany.getLocation()
+        );
     }
 
-    public List<Company> getAllCompanies(){
-        return companyRepository.findAll();
+    public List<CompanyResponseDTO> getAllCompanies(){
+        List<Company> companyList = companyRepository.findAll();
+      return  companyList.stream()
+                .map(company -> new CompanyResponseDTO(
+                        company.getId(),
+                        company.getName(),
+                        company.getDescription(),
+                        company.getLocation()
+                )).toList();
     }
-    public Company getCompanyById(Long id){
-        return companyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Company ID is not available"));
+    public CompanyResponseDTO getCompanyById(Long id){
+
+        Company getCompanyId = companyRepository.findById(id)
+                .orElseThrow(() -> new companyNotFoundExceptions("No Company Found!"));
+
+        return new CompanyResponseDTO(
+                getCompanyId.getId(),
+                getCompanyId.getName(),
+                getCompanyId.getDescription(),
+                getCompanyId.getLocation()
+        );
+
     }
 
-    public Company updateCompany(Long id, Company company) {
-        if (!companyRepository.existsById(id)) {
-            throw new RuntimeException("Company ID is not available");
-        }
-        company.setId(id);
-        return companyRepository.save(company);
-    }
+    public CompanyResponseDTO updateCompany(Long id, CompanyRequestDTO request)
+    {
+        Company checkedId = companyRepository.findById(id)
+                .orElseThrow(() -> new companyNotFoundExceptions("No Company Found!"));
 
-    public List<Job> getJobsByCompany(Long companyId){
+        checkedId.setName(request.name());
+        checkedId.setDescription(request.description());
+        checkedId.setLocation(request.location());
+
+        Company updatedCompany = companyRepository.save(checkedId);
+        return new CompanyResponseDTO(
+                updatedCompany.getId(),
+                updatedCompany.getName(),
+                updatedCompany.getDescription(),
+                updatedCompany.getLocation()
+        );
+
+   }
+
+    public List<JobResponseDTO> getJobsByCompany(Long companyId){
         Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new RuntimeException("ompany ID is not available"));
+                .orElseThrow(() -> new companyNotFoundExceptions("No Company Found!"));
 
-        return company.getJobs();
+        List<Job> jobList = company.getJobs();
+
+    return jobList.stream()
+            .map(job -> new JobResponseDTO(
+                    job.getId(),
+                    job.getTitle(),
+                    job.getDescription(),
+                    job.getLocation(),
+                    job.getSalary(),
+                    job.getDepartment()
+            )).toList();
 
     }
+
+    public Page<CompanyResponseDTO> getCompanyPaginated(int page, int size){
+
+        Sort sortOrder = Sort.by("location").ascending()
+                .and(Sort.by("name").descending());
+
+        Pageable pageable = PageRequest.of(page, size, sortOrder);
+        Page<Company> companyPage = companyRepository.findAll(pageable);
+
+        return companyPage.map(
+                company -> new CompanyResponseDTO(
+                        company.getId(),
+                        company.getName(),
+                        company.getDescription(),
+                        company.getLocation()
+                )
+        );
+    }
+
     public void deleteCompany(Long id){
         if(!companyRepository.existsById(id)){
-            throw new RuntimeException("Company ID is not available");
+            throw new companyNotFoundExceptions("No Company Found!");
         }
         companyRepository.deleteById(id);
     }

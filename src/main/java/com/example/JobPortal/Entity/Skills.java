@@ -2,6 +2,7 @@ package com.example.JobPortal.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,7 +20,7 @@ public class Skills {
     private String name;
 
     @ManyToMany(mappedBy = "skills")
-  @JsonIgnore
-   private List<Job> jobs;
+    @JsonIgnore
+    private List<Job> jobs;
 
 }

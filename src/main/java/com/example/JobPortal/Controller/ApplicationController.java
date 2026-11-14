@@ -1,7 +1,9 @@
 package com.example.JobPortal.Controller;
 
-import com.example.JobPortal.Entity.Application;
+import com.example.JobPortal.ApplicationStatus;
+import com.example.JobPortal.DTO.ApplicationResponseDTO;
 import com.example.JobPortal.Service.ApplicationService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,52 +20,56 @@ public class ApplicationController {
         this.applicationService = applicationService;
     }
 
-    @PostMapping("/applications")
-    public ResponseEntity<Application> addApplication(@RequestBody Application application){
-        Application addedapplication = applicationService.addApplication(application);
-        return ResponseEntity.ok(addedapplication);
-    }
-
     @GetMapping("/applications")
-    public List<Application> getAllApplications(){
+    public List<ApplicationResponseDTO> getAllApplications(){
         return applicationService.getAllApplications();
     }
 
     @GetMapping("/applications/{id}")
-    public ResponseEntity<Application> getApplicationById(@PathVariable Long id){
-        Application applicationId = applicationService.getApplicationById(id);
+    public ResponseEntity<ApplicationResponseDTO> getApplicationById(@PathVariable Long id){
+        ApplicationResponseDTO applicationId = applicationService.getApplicationById(id);
         return ResponseEntity.ok(applicationId);
     }
 
-    @PutMapping("/applications/{id}")
-    public ResponseEntity<Application> updateApplication(@PathVariable Long id, @RequestBody Application application){
-        Application updatedApplication = applicationService.updateApplication(id, application);
-        return ResponseEntity.ok(updatedApplication);
-    }
+
 
     @GetMapping("/users/{userId}/applications")
-    public List<Application> getApplicationsByUser(@PathVariable Long userId){
+    public List<ApplicationResponseDTO> getApplicationsByUser(@PathVariable Long userId){
         return applicationService.getApplicationsByUser(userId);
     }
 
     @GetMapping("/jobs/{jobId}/applications")
-    public List<Application> getApplicationsByJob(@PathVariable Long jobId){
+    public List<ApplicationResponseDTO> getApplicationsByJob(@PathVariable Long jobId){
         return applicationService.getApplicationsByJob(jobId);
     }
 
     @PostMapping("/jobs/{jobId}/apply")
-    public ResponseEntity<Application> applyForJob(
+    public ResponseEntity<ApplicationResponseDTO> applyForJob(
             @PathVariable Long jobId,
             @RequestParam Long userId) {
 
-        Application application = applicationService.applyForJob(jobId, userId);
+        ApplicationResponseDTO application = applicationService.applyForJob(jobId, userId);
 
         return ResponseEntity.ok(application);
     }
 
+    @PatchMapping("/applications/{id}/status")
+    public ResponseEntity<ApplicationResponseDTO>updateApplicationStatus(@PathVariable Long id,@RequestBody ApplicationStatus applicationStatus){
+
+        ApplicationResponseDTO application = applicationService.updateApplicationStatus(id,applicationStatus);
+        return ResponseEntity.ok(application);
+    }
+
+    @GetMapping("/applications/paginated")
+    public ResponseEntity<Page<ApplicationResponseDTO>>getApplicationPaginated(@RequestParam(defaultValue = "0") int page,
+                                                                               @RequestParam(defaultValue = "10") int size){
+        Page<ApplicationResponseDTO> applicationResponseDTOPage =applicationService.getApplicationPaginated(page, size);
+        return ResponseEntity.ok(applicationResponseDTOPage);
+    }
 
     @DeleteMapping("/applications/{id}")
-    public void deleteApplication(@PathVariable Long id){
+    public ResponseEntity<String> deleteApplication(@PathVariable Long id){
         applicationService.deleteApplication(id);
+        return ResponseEntity.ok("Application has been deleted");
     }
 }
